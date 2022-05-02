@@ -1,6 +1,7 @@
 from cgi import test
 from cmath import exp
 from msilib.schema import TextStyle
+from multiprocessing import context
 import tkinter as tk
 from tkinter import filedialog
 from tokenize import Number
@@ -9,7 +10,7 @@ import time
 
 updateFullInfo = False
 displayPlayer = "0"
-ReplayMode = True
+ReplayMode = False
 Numbering = False
 
 class BoardDisplay(tk.Frame): 
@@ -125,8 +126,15 @@ def enterInput(event = None):
         inp = inp[0:len(inp)-1]
     inputText.delete(0.0,'end')
     #TODO: Handle invalid moves
-    newboard = Stratego.parseUserInput(inp,board)
-    update(newboard)
+    global board
+    Stratego.parseUserInput(inp,board)
+    context = dict()
+    context["boardState"] = board.getBoard()
+    context["playerNumber"] = "2"
+    context["Verbose"] = False
+    Stratego.loadOpponent(Stratego.OPPONENTS.RANDOTRON,board,"2").activate(context)
+    update(board.getBoard())
+
 
 def numberToggle(event = None):
     global board

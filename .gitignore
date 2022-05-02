@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+#Game Replays
+Replays/
+
 # Distribution / packaging
 .Python
 build/
