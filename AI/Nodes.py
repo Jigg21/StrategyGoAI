@@ -1,6 +1,6 @@
 from contextvars import Context
 from ctypes.wintypes import tagRECT
-from operator import index
+from operator import index, truediv
 from sre_constants import SUCCESS
 import AI.BehaviorTree as BT
 import random
@@ -31,7 +31,7 @@ class node_getValidMoves(BT.Node):
                 if boardObj.checkMoveLegality(i,i-n,context["playerNumber"]):
                   moveList.append("{unit}:{target}".format(unit=i,target=i-n))
                   target = board[(i-n)*3:((i-n)*3)+3] 
-                  if space[1] != "8" or space[0] != target[0] and target[0] == "0":
+                  if self.isSpaceMoveable(space,target):
                     break
                 else:
                   break
@@ -41,7 +41,7 @@ class node_getValidMoves(BT.Node):
                 if boardObj.checkMoveLegality(i,i+n,context["playerNumber"]):
                   moveList.append("{unit}:{target}".format(unit=i,target=i+n))
                   target = board[(i-n)*3:((i-n)*3)+3] 
-                  if space[1] != "8" or space[0] != target[0] and target[0] == "0":
+                  if self.isSpaceMoveable(space,target):
                     break
                 else:
                   break
@@ -51,7 +51,7 @@ class node_getValidMoves(BT.Node):
                 if boardObj.checkMoveLegality(i,i-(10*n),context["playerNumber"]):
                   moveList.append("{unit}:{target}".format(unit=i,target=i-(10*n)))
                   target = board[(i-n)*3:((i-n)*3)+3] 
-                  if space[1] != "8" or space[0] != target[0] and target[0] == "0":
+                  if self.isSpaceMoveable(space,target):
                     break
                 else:
                   break
@@ -61,22 +61,26 @@ class node_getValidMoves(BT.Node):
                 if boardObj.checkMoveLegality(i,i+(n*10),context["playerNumber"]):
                   moveList.append("{unit}:{target}".format(unit=i,target=i+(10*n)))
                   target = board[(i-n)*3:((i-n)*3)+3] 
-                  if space[1] != "8" or space[0] != target[0] and target[0] == "0":
+                  if self.isSpaceMoveable(space,target):
                     break
                 else:
                   break
       if len(moveList) == 0:
-        print("No Moves")
+        if context["Verbose"]:
+          print("No Moves")
         return BT.nodeStates.FAILED
       else:
         context["ValidMoves"] = moveList
         return BT.nodeStates.SUCCESS
 
-  def isSpaceMoveable(self,board,index,playerNumber):
-    if index < 0 or index >= 100:
+  def isSpaceMoveable(self,unit,target):
+    if len(unit) < 3:
       return False
-    space = board[(index*3):(index*3)+3][0]
-    return space[0] == "0" or playerNumber != space[0]
+    if len(target) < 3:
+      return False
+    if unit[1] != "8" or unit[0] != target[0] and target[0] == "0":
+      return True
+    return False
 
 class node_choseRandomMove(BT.Node):
   def __init__(self, desc="") -> None:

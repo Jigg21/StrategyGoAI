@@ -172,7 +172,7 @@ def parseAgentInput(input,board,agentNumber):
     board.makeMove(int(input[0]),int(input[1]),agentNumber)
     return board.getBoard()
 
-def runGame(Player1,Player2,startingBoard):
+def runGame(Player1,Player2,startingBoard,record = False):
     '''runs a game between two ai opponents with a given starting board, returns an int to describe which ai won'''
     gameBoard = Board(startingBoard)
     try:
@@ -181,9 +181,9 @@ def runGame(Player1,Player2,startingBoard):
     except:
         print("FAILED TO INITIALIZE OPPONENTS, ABORTING")
         return -1
-
-    gameFile = open("./Replays/SGR_{Op1}_{Op2}_{time}.txt".format(Op1=Player1,Op2=Player2,time=int(time.time())),"w")
-    gameFile.write(startingBoard + "\n")
+    if (record):
+        gameFile = open("./Replays/SGR_{Op1}_{Op2}_{time}.txt".format(Op1=Player1,Op2=Player2,time=int(time.time())),"w")
+        gameFile.write(startingBoard + "\n")
     turnCount = 0
     while True:
         turnCount += 1
@@ -193,10 +193,11 @@ def runGame(Player1,Player2,startingBoard):
         context["Verbose"] = False
         if (not Player1.activate(context)):
             #player 2 wins
-            print("PLAYER @ WINS")
-            gameFile.close()
+            if record:
+                gameFile.close()
             return 2
-        gameFile.write(context["Move"] + "\n")
+        if record:
+            gameFile.write(context["Move"] + "\n")
 
         context = dict()
         context["boardState"] = gameBoard.getBoard()
@@ -204,13 +205,15 @@ def runGame(Player1,Player2,startingBoard):
         context["Verbose"] = False
         if (not Player2.activate(context)):
             #player 1 wins
-            print("PLAYER ! WINS")
-            gameFile.close()
+            if record:
+                gameFile.close()
             return 1
-        gameFile.write(context["Move"]+"\n")
+        if record:
+            gameFile.write(context["Move"]+"\n")
         
         if gameBoard.getWinner() != 0:
-            gameFile.close()
+            if record:
+                gameFile.close()
             return gameBoard.getWinner()
         
         #game has gone on too long, ending in a tie

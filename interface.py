@@ -10,7 +10,7 @@ import time
 
 updateFullInfo = False
 displayPlayer = "0"
-ReplayMode = False
+ReplayMode = True
 Numbering = False
 
 class BoardDisplay(tk.Frame): 
