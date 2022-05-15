@@ -17,3 +17,20 @@ class StrategoAI(BT.Tree):
     
     def __str__(self) -> str:
         return "Stratego Base AI"
+
+
+class moveOBJ():
+    def __init__(self,source,target) -> None:
+        self.source = source
+        self.target = target
+        self.value = 0
+
+    def getSource(self):
+        return self.source
+    
+    def getTarget(self):
+        return self.target
+
+
+    def __str__(self) -> str:
+        return str(self.source) + ":" + str(self.target)

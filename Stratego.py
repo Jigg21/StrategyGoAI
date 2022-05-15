@@ -2,6 +2,7 @@ from fileinput import filename
 from operator import truediv
 import Utilities
 import AI.RandoTron
+import AI.lilJimmy
 from enum import Enum
 import time
 
@@ -54,9 +55,42 @@ class Board ():
             return True
         return False
     
+    def checkObstructed(self,source,target):
+        if target > 100 or target < 0 or source > 100 or source <0:
+            return True
+        #on same row
+        if abs((source//10) == (target //10)):
+            if source > target:
+                for i in range (1,source-target):
+                    space = self.getSpace(source-i)
+                    if space[0] != "0":
+                        return True
+            else:
+                for i in range (1,target-source):
+                    space = self.getSpace(source+i)
+                    if space[0] != "0":
+                        return True
+        #same collumn
+        if abs((source%10) == (target % 10)):
+            if source > target:
+                #down
+                for i in range (1,(source//10)-(target//10)):
+                    space = self.getSpace(source-i*10)
+                    if space[0] != "0":
+                        return True
+            else:
+                #up
+                for i in range (1,(target//10)-(source//10)):                
+                    space = self.getSpace(source+i*10)
+                    if space[0] != "0":
+                        return True
+        return False
+
     def checkMoveLegality (self,sourceIndex,targetIndex,player,verbose=False):
         '''checks to see if a proposed move is legal'''
         if sourceIndex > 99 or sourceIndex < 0 or targetIndex > 99 or targetIndex < 0:
+            if verbose:
+                print("OFF BOARD {source}|{unit}:{target}|{targetUnit}".format(source=sourceIndex, unit=unit, target=targetIndex,targetUnit=target))
             return False
         unit = self.getSpace(int(sourceIndex))
         target = self.getSpace(targetIndex)
@@ -82,7 +116,11 @@ class Board ():
                 if verbose:
                     print("TOO FAR {source}|{unit}:{target}|{targetUnit}".format(source=sourceIndex, unit=unit, target=targetIndex,targetUnit=target))
                 return False
-        
+        else:
+            if self.checkObstructed(sourceIndex,targetIndex):
+                if verbose:
+                    print("OBSTRUCTED {source}|{unit}:{target}|{targetUnit}".format(source=sourceIndex, unit=unit, target=targetIndex,targetUnit=target))
+                return False
         #false if the unit tries to move to a water space
         if target[1] == "W":
             if verbose:
@@ -103,6 +141,9 @@ class Board ():
             target = self.getSpace(targetIndex)
             self.changeSpace(sourceIndex,"000")
             #if the target square is empty, change the square, else resolve battle
+            if unit[1] == "8":
+                if abs(sourceIndex-targetIndex) != 1 or abs(sourceIndex-targetIndex) != 10:
+                    unit = unit[:2]+"1"
             if target[0] == "0":
                 self.changeSpace(targetIndex,unit)
             #if its the flag, the game is over
@@ -147,6 +188,8 @@ class BoardDisplay():
 
 class OPPONENTS(Enum):
     RANDOTRON = 0
+    LILJIMMY = 1
+
 
 def parseUserInput(userInput, board):
     '''takes input and parses the command, then returns the new board, player is always assumed to be player 1'''
@@ -226,6 +269,8 @@ def loadOpponent(opponentType,gameBoard,playerNumber):
     '''Takes an enum and returns the strategoAI object to match'''
     if (opponentType == OPPONENTS.RANDOTRON):
         return AI.RandoTron.Agent_RandoTron(gameBoard,playerNumber)
+    elif opponentType == OPPONENTS.LILJIMMY:
+        return AI.lilJimmy.Agent_lilJimmy(gameBoard,playerNumber)
     else:
         raise ValueError
         

@@ -2,6 +2,7 @@ from contextvars import Context
 from ctypes.wintypes import tagRECT
 from operator import index, truediv
 from sre_constants import SUCCESS
+from AI.AIBase import moveOBJ
 import AI.BehaviorTree as BT
 import random
 
@@ -19,6 +20,7 @@ class node_getValidMoves(BT.Node):
       moveList = list()
       board = context["boardState"]
       boardObj = Stratego.Board(board)
+      validMoves = list()
       #for each space on the board
       for i in range(100):
         space = board[i*3:(i*3)+3] 
@@ -30,6 +32,7 @@ class node_getValidMoves(BT.Node):
               for n in range(1,10):
                 if boardObj.checkMoveLegality(i,i-n,context["playerNumber"]):
                   moveList.append("{unit}:{target}".format(unit=i,target=i-n))
+                  validMoves.append(moveOBJ(i,i-n))
                   target = board[(i-n)*3:((i-n)*3)+3] 
                   if self.isSpaceMoveable(space,target):
                     break
@@ -40,6 +43,7 @@ class node_getValidMoves(BT.Node):
               for n in range(1,10):
                 if boardObj.checkMoveLegality(i,i+n,context["playerNumber"]):
                   moveList.append("{unit}:{target}".format(unit=i,target=i+n))
+                  validMoves.append(moveOBJ(i,i+n))
                   target = board[(i-n)*3:((i-n)*3)+3] 
                   if self.isSpaceMoveable(space,target):
                     break
@@ -50,6 +54,7 @@ class node_getValidMoves(BT.Node):
               for n in range(1,10):
                 if boardObj.checkMoveLegality(i,i-(10*n),context["playerNumber"]):
                   moveList.append("{unit}:{target}".format(unit=i,target=i-(10*n)))
+                  validMoves.append(moveOBJ(i,i-(10*n)))
                   target = board[(i-n)*3:((i-n)*3)+3] 
                   if self.isSpaceMoveable(space,target):
                     break
@@ -60,17 +65,19 @@ class node_getValidMoves(BT.Node):
               for n in range(1,10):
                 if boardObj.checkMoveLegality(i,i+(n*10),context["playerNumber"]):
                   moveList.append("{unit}:{target}".format(unit=i,target=i+(10*n)))
+                  validMoves.append(moveOBJ(i,i+(10*n)))
                   target = board[(i-n)*3:((i-n)*3)+3] 
                   if self.isSpaceMoveable(space,target):
                     break
                 else:
                   break
+      #no valid moves, game over
       if len(moveList) == 0:
         if context["Verbose"]:
           print("No Moves")
         return BT.nodeStates.FAILED
       else:
-        context["ValidMoves"] = moveList
+        context["ValidMoves"] = validMoves
         return BT.nodeStates.SUCCESS
 
   def isSpaceMoveable(self,unit,target):
@@ -89,5 +96,49 @@ class node_choseRandomMove(BT.Node):
   def activate(self, context) -> BT.nodeStates:
       super().activate(context)
       chosenMove = context["ValidMoves"][random.randrange(0,len(context["ValidMoves"]))]
-      context["Move"] = chosenMove
+      context["Move"] = str(chosenMove)
       return BT.nodeStates.SUCCESS
+
+class node_removeSuicidalMoves(BT.Node):
+  def activate(self, context) -> BT.nodeStates:
+      super().activate(context)
+      moves = context["ValidMoves"]
+      boardstr = context["boardState"]
+      board = Stratego.Board(boardstr)
+      newMoveList = list()
+      #remove any move that results in death
+      for move in moves:
+        unit = board.getSpace(move.getSource())
+        target = board.getSpace(move.getTarget())
+        if not self.willUnitDie(unit,target):
+          newMoveList.append(move)
+      if (len(newMoveList) > 0):
+        context["ValidMoves"] = newMoveList
+        return BT.nodeStates.SUCCESS
+      else:
+        return BT.nodeStates.FAILED
+
+  def willUnitDie(self,unit,target):
+    #empty
+    if target[0]=="0":
+        return False
+    #target is unknown
+    elif target[2] == "0":
+        return False
+    #bombs
+    elif target[1] == "B":
+        if unit[1] == "7":
+            return False
+        else:
+            return True
+    #the flag
+    elif target[1] == "A":
+        return False
+    #combat
+    elif int(target[1]) <= int(target[1]):
+        if target[1] == "0" and unit[1] == 9:
+            return False
+        else:
+            return True
+    else:
+        return False

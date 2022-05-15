@@ -164,7 +164,7 @@ def playReplay():
     next = displayGame.next()
     if next != -1:
         update(next)
-        root.after(1,playReplay)    
+        root.after(2,playReplay)    
 
 def loadGame():
     '''loads a game from filepath and returns a game object'''
