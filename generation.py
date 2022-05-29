@@ -5,9 +5,36 @@ import Stratego
 import random
 from progress.bar import FillingSquaresBar
 
+player1Board = "1301701701701601B01A01B01501701301801301901401001B01601501801601801101201201801601B01B01B0150140150170180140180180180140"
 player2Board = "2B02B02602602B02602302702802802302302402402202402702902202102502502502402302702702502002B02602702802802802802802802B02A0"
 generationNumber = 0
 childNumber = 0
+class SelectionInfoObj():
+    def __init__(self) -> None:
+        self.player1Wins = 0
+        self.player1WinsbyCapture = 0
+        self.player2Wins = 0
+        self.player2WinsbyCapture = 0
+        self.gameCount = 0
+
+    def getWins(self):
+        return (self.player1Wins,self.player2Wins)
+
+    def parseGame(self,replay):
+        self.gameCount += 1
+        if replay.winner == 1:
+            self.player1Wins += 1
+            if replay.wasCapture:
+                self.player1WinsbyCapture += 1
+        elif replay.winner == 2:
+            self.player2Wins += 1
+            if replay.wasCapture:
+                self.player2WinsbyCapture += 1
+
+    def __str__(self) -> str:
+        result = ""
+        result += "Player 1 won {win} games ({pct})\n".format(win=self.Player1Win,pct=self.Player1Win/self.gameCount)
+        result += "Player 2 won {win} games ({pct})\n".format(win=self.Player2Win,pct=self.Player2Win/self.gameCount)
 
 def runGames(board,op1,op2,count):
     Player1Win = 0
@@ -15,21 +42,18 @@ def runGames(board,op1,op2,count):
     global generationNumber
     global childNumber
     childNumber += 1
+    selectionInfo = SelectionInfoObj()
+    #run the games and send them to the selection info object, updating the progress bar as it goes
     with FillingSquaresBar("Testing {age}.{child}: ".format(age=generationNumber,child=childNumber),max=count,suffix='%(index)d/%(max)d') as bar:
         for i in range (count):
             result = Stratego.runGame(op1,op2,board)
-            if result == 1:
-                Player1Win += 1
-            elif result == 2:
-                Player2Win += 1
+            selectionInfo.parseGame(result)
             bar.next()
         bar.finish()
         
     
-    print("Player 1 won {win} games ({pct})".format(win=Player1Win,pct=Player1Win/count))
-    print("Player 2 won {win} games ({pct})".format(win=Player2Win,pct=Player2Win/count))
-    return (Player1Win,Player2Win)
-
+    print (selectionInfo)
+    return selectionInfo
 
 def makeStartingBoard(player1,player2):
     return player1 + "000000WWWWWW000000WWWWWW000000000000WWWWWW000000WWWWWW000000" + player2
@@ -76,8 +100,10 @@ def getMaxDictEntry(d):
 
 def runGenerations(numberOfGenerations,op1,op2):
     #generate a starting generation
-    gen1Start = "1301701701701601B01A01B01501701301801301901401001B01601501801601801101201201801601B01B01B0150140150170180140180180180140"
-    generation = makeGeneration(gen1Start,gen1Start,gen1Start)
+    genAStart = "1A01B01B01B01B01B01B0190180180180180180180180180170170170170170160160160160150150150150140140140140130130130120120110100"
+    genBStart = "2002102202202302302302402402402402502502502502602602602602702702702702702802802802802802802802802902B02B02B02B02B02B02A0"
+    generationAlpha = makeGeneration(genAStart,genAStart,genAStart)
+    generationBeta = makeGeneration(genBStart,genBStart,genBStart)
     #for 100 generations
     for age in range(numberOfGenerations):
         global generationNumber
@@ -86,12 +112,12 @@ def runGenerations(numberOfGenerations,op1,op2):
         childWinRates = dict()
         #each child plays 100 games, the best 3 are chosen for the next generation
         for child in generation:
-            results = runGames(makeStartingBoard(child,player2Board),Stratego.OPPONENTS.LILJIMMY,Stratego.OPPONENTS.RANDOTRON,100)
-            childWinRates[child] = results[0]
+            results = runGames(makeStartingBoard(child,player2Board),op1,op2,100)
+            childWinRates[child] = results.getWins[0]
             
         max1 = getMaxDictEntry(childWinRates)
         childWinRates[max1[0]] = 0
-        runMilestoneGame(makeStartingBoard(max1[0],player2Board),Stratego.OPPONENTS.LILJIMMY,Stratego.OPPONENTS.RANDOTRON)
+        runMilestoneGame(makeStartingBoard(max1[0],player2Board),op1,op2)
         max2 = getMaxDictEntry(childWinRates)
         childWinRates[max2[0]] = 0
         max3 = getMaxDictEntry(childWinRates)
@@ -102,12 +128,10 @@ def runGenerations(numberOfGenerations,op1,op2):
         generation = makeGeneration(max1[0],max2[0],max3[0])
 
 def runGamesOnDefaultBoard(op1,op2,count):
-    gen1Start = "1301701701701601B01A01B01501701301801301901401001B01601501801601801101201201801601B01B01B0150140150170180140180180180140"
-    runGames(makeStartingBoard(gen1Start,player2Board),op1,op2,count)
+    runGames("1A01B01B01B01B01B01B0190180180180180180180180180170170170170170160160160160150150150150140140140140130130130120120110100000000WWWWWW000000WWWWWW000000000000WWWWWW000000WWWWWW000000200210220222302302302402402402402502502502502602602602602702702702702702802802802802802802802802902B02B02B02B02B02B02A0",op1,op2,count)
 
 def recordGameOnDefaultBoard(op1,op2):
-    gen1Start = "1301701701701601B01A01B01501701301801301901401001B01601501801601801101201201801601B01B01B0150140150170180140180180180140"
-    runMilestoneGame(makeStartingBoard(gen1Start,player2Board),op1,op2)
+    runMilestoneGame("1A01B01B01B01B01B01B0190180180180180180180180180170170170170170160160160160150150150150140140140140130130130120120110100000000WWWWWW000000WWWWWW000000000000WWWWWW000000WWWWWW000000200210220222302302302402402402402502502502502602602602602702702702702702802802802802802802802802902B02B02B02B02B02B02A0",op1,op2)
 
 def parseEnums(opStr):
     str.upper(opStr)
@@ -133,14 +157,13 @@ def main(argv):
         #runGenerations(gens)
         return
     if argv[0] == "singleGame":
-        gen1Start = "1301701701701601B01A01B01501701301801301901401001B01601501801601801101201201801601B01B01B0150140150170180140180180180140"
         if len(argv) != 3:
             raise ValueError
         else:
             op1 = parseEnums(argv[1])
             op2 = parseEnums(argv[2])
             
-            replay = runMilestoneGame(makeStartingBoard(gen1Start,player2Board),op1,op2)
+            replay = recordGameOnDefaultBoard(op1,op2)
             print(replay)
 
 

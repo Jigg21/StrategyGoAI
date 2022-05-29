@@ -1,5 +1,6 @@
 from cgi import test
 from cmath import exp
+from glob import glob
 from msilib.schema import TextStyle
 from multiprocessing import context
 import tkinter as tk
@@ -7,11 +8,13 @@ from tkinter import filedialog
 from tokenize import Number
 import Stratego
 import time
+import sys
 
 updateFullInfo = False
 displayPlayer = "0"
 ReplayMode = True
 Numbering = False
+AIActive = True
 
 class BoardDisplay(tk.Frame): 
     def __init__(self,parent):
@@ -121,6 +124,7 @@ class SimpleTextObj(tk.Frame):
         self.text.pack(expand=False)
 
 def enterInput(event = None):
+    global inputText
     inp = inputText.get(1.0, "end-1c")
     if (event != None):
         inp = inp[0:len(inp)-1]
@@ -128,13 +132,13 @@ def enterInput(event = None):
     #TODO: Handle invalid moves
     global board
     Stratego.parseUserInput(inp,board)
-    context = dict()
-    context["boardState"] = board.getBoard()
-    context["playerNumber"] = "2"
-    context["Verbose"] = False
-    Stratego.loadOpponent(Stratego.OPPONENTS.RANDOTRON,board,"2").activate(context)
+    if AIActive:
+        context = dict()
+        context["boardState"] = board.getBoard()
+        context["playerNumber"] = "2"
+        context["Verbose"] = False
+        Stratego.loadOpponent(Stratego.OPPONENTS.RANDOTRON,board,"2").activate(context)
     update(board.getBoard())
-
 
 def numberToggle(event = None):
     global board
@@ -178,40 +182,59 @@ def loadGame():
     displayGame = gameReplay(filename)
 
 def update(boardState):
+    global boardDisplay
     boardDisplay.updateBoard(boardState)
 
-def main():
-    print("DONE")
+
+def initialize(ReplayMode):
+    global boardDisplay
+    global inputText
+    global root
+    root = tk.Tk()
+    root.geometry('400x200')
+    root.title("Stratego")
+    root.bind('<Return>',enterInput)
+    root.bind('<Control_L>',numberToggle)
+    boardDisplay = BoardDisplay(root)
+    boardDisplay.pack()
+    if (not ReplayMode):
+        inputText = tk.Text(root,height=1,width=20)
+        inputText.pack()
+        enterButton = tk.Button(root,text = "Enter Move",command= enterInput)
+        enterButton.pack()
+    else:
+        replayConsole = tk.Frame(root)
+        replayConsole.pack()
+        prevButton = tk.Button(replayConsole,text = "Prev",command= replayPrev)
+        prevButton.pack(side="left")
+        loadButton = tk.Button(replayConsole,text = "Load File",command= loadGame)
+        loadButton.pack(side="left")
+        nextButton = tk.Button(replayConsole,text = "Next",command= replayNext)
+        nextButton.pack(side="right")
+        playButton = tk.Button(replayConsole,text = "Play",command= playReplay)
+        playButton.pack(side="bottom")
+
+board = Stratego.Board("1301701701701601B01A01B01B01701301801301901401501B01601501801601801201201101801601B01B0150100140150170180140180180180140000000WWWWWW000000WWWWWW000000000000WWWWWW000000WWWWWW0000002B02B02602602B02602302702802802302302402402202402702902202102502502502402302702702502002B02602702802802802802802802B02A0")
+displayGame = gameReplay()
+
+def main(argv):
     #initialize board
+    global boardDisplay
+    if len(argv) == 0:
+        print ("Starting in play mode")
+        initialize(False)
+    else:
+        if argv[0] == "-r":
+            print("Starting in replay mode")
+            initialize(True)
+        elif argv[0] == "-e":
+            print("Starting in Edit mode")
+            global AIActive
+            AIActive = False
+            initialize(False)
     boardDisplay.updateBoard(board.getBoard())
     root.mainloop()
 
 
-root = tk.Tk()
-root.geometry('400x200')
-root.title("Stratego")
-root.bind('<Return>',enterInput)
-root.bind('<Control_L>',numberToggle)
-boardDisplay = BoardDisplay(root)
-boardDisplay.pack()
-if (not ReplayMode):
-    inputText = tk.Text(root,height=1,width=20)
-    inputText.pack()
-    enterButton = tk.Button(root,text = "Enter Move",command= enterInput)
-    enterButton.pack()
-else:
-    replayConsole = tk.Frame(root)
-    replayConsole.pack()
-    prevButton = tk.Button(replayConsole,text = "Prev",command= replayPrev)
-    prevButton.pack(side="left")
-    loadButton = tk.Button(replayConsole,text = "Load File",command= loadGame)
-    loadButton.pack(side="left")
-    nextButton = tk.Button(replayConsole,text = "Next",command= replayNext)
-    nextButton.pack(side="right")
-    playButton = tk.Button(replayConsole,text = "Play",command= playReplay)
-    playButton.pack(side="bottom")
-
-
-board = Stratego.Board("1301701701701601B01A01B01B01701301801301901401501B01601501801601801201201101801601B01B0150100140150170180140180180180140000000WWWWWW000000WWWWWW000000000000WWWWWW000000WWWWWW0000002B02B02602602B02602302702802802302302402402202402702902202102502502502402302702702502002B02602702802802802802802802B02A0")
-displayGame = gameReplay()
-main()
+if __name__ == "__main__":
+    main(sys.argv[1:])

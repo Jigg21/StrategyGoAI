@@ -227,8 +227,6 @@ class replayObj():
             result += "The game ended in a tie\n"
         return result
     
-    
-
 def parseUserInput(userInput, board):
     '''takes input and parses the command, then returns the new board, player is always assumed to be player 1'''
     if (userInput == "return"):
@@ -238,12 +236,18 @@ def parseUserInput(userInput, board):
         board.cheatMode(True)
         return board.getBoard()
     
+    if (userInput == "clear"):
+        board.ClearBoard()
+        return board.getBoard()
 
     userInput = userInput.split(":")
     
     
     if userInput[0][0] == "c" or userInput[0][0] == "C" :
-        board.changeSpace(int(userInput[0][1:]),userInput[1])
+        if board.isCheating:
+            board.changeSpace(int(userInput[0][1:]),userInput[1])
+        else:
+            print("THAT'S CHEATING")
         return board.getBoard()
     board.makeMove(int(userInput[0]),int(userInput[1]),"1")
     return board.getBoard()
