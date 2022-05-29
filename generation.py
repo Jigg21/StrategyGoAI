@@ -9,6 +9,7 @@ player1Board = "1301701701701601B01A01B01501701301801301901401001B01601501801601
 player2Board = "2B02B02602602B02602302702802802302302402402202402702902202102502502502402302702702502002B02602702802802802802802802B02A0"
 generationNumber = 0
 childNumber = 0
+
 class SelectionInfoObj():
     def __init__(self) -> None:
         self.player1Wins = 0
@@ -16,11 +17,13 @@ class SelectionInfoObj():
         self.player2Wins = 0
         self.player2WinsbyCapture = 0
         self.gameCount = 0
+        self.turnCount = 0
 
     def getWins(self):
         return (self.player1Wins,self.player2Wins)
 
     def parseGame(self,replay):
+        '''take a replay object and extract important information'''
         self.gameCount += 1
         if replay.winner == 1:
             self.player1Wins += 1
@@ -30,13 +33,20 @@ class SelectionInfoObj():
             self.player2Wins += 1
             if replay.wasCapture:
                 self.player2WinsbyCapture += 1
-
+        self.turnCount += len(replay.moves)
+        
+    
     def __str__(self) -> str:
         result = ""
-        result += "Player 1 won {win} games ({pct})\n".format(win=self.Player1Win,pct=self.Player1Win/self.gameCount)
-        result += "Player 2 won {win} games ({pct})\n".format(win=self.Player2Win,pct=self.Player2Win/self.gameCount)
+        result += "Player 1 won {win} games ({pct}%)\n".format(win=self.player1Wins,pct=self.player1Wins/self.gameCount)
+        result += "\t-Of those wins, {capWin} were by capture\n".format(capWin=self.player1WinsbyCapture)
+        result += "Player 2 won {win} games ({pct}%)\n".format(win=self.player2Wins,pct=self.player2Wins/self.gameCount)
+        result += "\t-Of those wins, {capWin} were by capture\n".format(capWin=self.player2WinsbyCapture)
+        result += "The average game took {turns} turns\n".format(turns=self.turnCount/self.gameCount)
+        return result
 
 def runGames(board,op1,op2,count):
+    '''runs count number of games between op1 and op2'''
     Player1Win = 0
     Player2Win = 0
     global generationNumber
@@ -44,15 +54,12 @@ def runGames(board,op1,op2,count):
     childNumber += 1
     selectionInfo = SelectionInfoObj()
     #run the games and send them to the selection info object, updating the progress bar as it goes
-    with FillingSquaresBar("Testing {age}.{child}: ".format(age=generationNumber,child=childNumber),max=count,suffix='%(index)d/%(max)d') as bar:
+    with FillingSquaresBar("Testing g{age}.{child}: ".format(age=generationNumber,child=childNumber),max=count,suffix='%(index)d/%(max)d') as bar:
         for i in range (count):
             result = Stratego.runGame(op1,op2,board)
             selectionInfo.parseGame(result)
             bar.next()
         bar.finish()
-        
-    
-    print (selectionInfo)
     return selectionInfo
 
 def makeStartingBoard(player1,player2):
@@ -86,6 +93,19 @@ def makeGeneration(fam1,fam2,fam3):
     generation.append(mutateStart(fam3))
     return generation
 
+def createNextGeneration(pop):
+    max1 = getMaxDictEntry(pop)
+    pop[max1[0]] = 0
+    max2 = getMaxDictEntry(pop)
+    pop[max2[0]] = 0
+    max3 = getMaxDictEntry(pop)
+    print("Top 3:")
+    print("{board}:{wins} wins".format(board=max1[0],wins=max1[1]))
+    print("{board}:{wins} wins".format(board=max2[0],wins=max2[1]))
+    print("{board}:{wins} wins".format(board=max3[0],wins=max3[1]))
+    nextGen = makeGeneration(max1[0],max2[0],max3[0])
+    return nextGen
+
 def runMilestoneGame(board,op1,op2):
     return Stratego.runGame(op1,op2,board,record=True)
 
@@ -108,33 +128,36 @@ def runGenerations(numberOfGenerations,op1,op2):
     for age in range(numberOfGenerations):
         global generationNumber
         generationNumber += 1
+        global childNumber
+        childNumber = 0
         print("STARTING GENERATION: {age} ".format(age=age+1))
-        childWinRates = dict()
+        childAWinRates = dict()
+        childBWinRates = dict()
         #each child plays 100 games, the best 3 are chosen for the next generation
-        for child in generation:
-            results = runGames(makeStartingBoard(child,player2Board),op1,op2,100)
-            childWinRates[child] = results.getWins[0]
-            
-        max1 = getMaxDictEntry(childWinRates)
-        childWinRates[max1[0]] = 0
-        runMilestoneGame(makeStartingBoard(max1[0],player2Board),op1,op2)
-        max2 = getMaxDictEntry(childWinRates)
-        childWinRates[max2[0]] = 0
-        max3 = getMaxDictEntry(childWinRates)
-        print("Top 3:")
-        print("{board}:{wins} wins".format(board=max1[0],wins=max1[1]))
-        print("{board}:{wins} wins".format(board=max2[0],wins=max2[1]))
-        print("{board}:{wins} wins".format(board=max3[0],wins=max3[1]))
-        generation = makeGeneration(max1[0],max2[0],max3[0])
+        for childA in generationAlpha:
+            for childB in generationBeta:
+                results = runGames(makeStartingBoard(childA,childB),op1,op2,100)
+                if childA in childAWinRates:
+                    childAWinRates[childA] += results.getWins()[0]
+                else:
+                    childAWinRates[childA] = results.getWins()[0]
+                if childB in childBWinRates:
+                    childBWinRates[childB] += results.getWins()[1]
+                else:
+                    childBWinRates[childB] = results.getWins()[1]
+        generationAlpha = createNextGeneration(childAWinRates)
+        generationBeta = createNextGeneration(childBWinRates)
+
 
 def runGamesOnDefaultBoard(op1,op2,count):
-    runGames("1A01B01B01B01B01B01B0190180180180180180180180180170170170170170160160160160150150150150140140140140130130130120120110100000000WWWWWW000000WWWWWW000000000000WWWWWW000000WWWWWW000000200210220222302302302402402402402502502502502602602602602702702702702702802802802802802802802802902B02B02B02B02B02B02A0",op1,op2,count)
+    info = runGames("1A01B01B01B01B01B01B0190180180180180180180180180170170170170170160160160160150150150150140140140140130130130120120110100000000WWWWWW000000WWWWWW000000000000WWWWWW000000WWWWWW0000002002102202202302302302402402402402502502502502602602602602702702702702702802802802802802802802802902B02B02B02B02B02B02A0",op1,op2,count)
+    print(info)
 
 def recordGameOnDefaultBoard(op1,op2):
-    runMilestoneGame("1A01B01B01B01B01B01B0190180180180180180180180180170170170170170160160160160150150150150140140140140130130130120120110100000000WWWWWW000000WWWWWW000000000000WWWWWW000000WWWWWW000000200210220222302302302402402402402502502502502602602602602702702702702702802802802802802802802802902B02B02B02B02B02B02A0",op1,op2)
+    return runMilestoneGame("1A01B01B01B01B01B01B0190180180180180180180180180170170170170170160160160160150150150150140140140140130130130120120110100000000WWWWWW000000WWWWWW000000000000WWWWWW000000WWWWWW0000002002102202202302302302402402402402502502502502602602602602702702702702702802802802802802802802802902B02B02B02B02B02B02A0",op1,op2)
 
 def parseEnums(opStr):
-    str.upper(opStr)
+    opStr = str.upper(opStr)
     if opStr == "RANDOTRON" or opStr == "RANDO":
         return Stratego.OPPONENTS.RANDOTRON
     if opStr == "LILJIMMY" or opStr == "JIMMY":
@@ -148,15 +171,20 @@ def main(argv):
         print("Command line tool help!")
         print("- gen [number] to run a number of generations")
         print("- singleGame [Opponent1] [Opponent2] to run a default game between two opponents")
+        print("= runGames [Opponent1] [Opponent2] [number] to run N games between two opponents")
         return
     if argv[0] == "gen":
-        if len(argv) == 1:
+        print("Running Generations")
+        if len(argv) != 4:
             raise ValueError
-        gens = int(argv[1])
-        print(gens)
-        #runGenerations(gens)
+        else:
+            gens = int(argv[1])
+            op1 = parseEnums(argv[2])
+            op2 = parseEnums(argv[3])
+            runGenerations(gens,op1,op2)
         return
     if argv[0] == "singleGame":
+        print("running a game")
         if len(argv) != 3:
             raise ValueError
         else:
@@ -165,6 +193,15 @@ def main(argv):
             
             replay = recordGameOnDefaultBoard(op1,op2)
             print(replay)
+    if argv[0] == "runGames":
+        print("running games")
+        if len(argv) != 4:
+            raise ValueError
+        else:
+            op1 = parseEnums(argv[1])
+            op2 = parseEnums(argv[2])
+            runGamesOnDefaultBoard(op1,op2,int(argv[3]))
+    
 
 
 
