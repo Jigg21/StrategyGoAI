@@ -269,6 +269,8 @@ def runGame(Player1Str,Player2Str,startingBoard,record = False):
     if (record):
         gameFile = open("./Replays/SGR_{Op1}_{Op2}_{time}.txt".format(Op1=Player1,Op2=Player2,time=int(time.time())),"w")
         gameFile.write(startingBoard + "\n")
+    else:
+        gameFile = None
     
     #run game
     replay = replayObj(gameBoard,Player1Str,Player2Str)
