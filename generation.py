@@ -1,10 +1,14 @@
 from tracemalloc import start
+import sys
+from xml.etree.ElementPath import ops
 import Stratego
 import random
 from progress.bar import FillingSquaresBar
+
 player2Board = "2B02B02602602B02602302702802802302302402402202402702902202102502502502402302702702502002B02602702802802802802802802B02A0"
 generationNumber = 0
 childNumber = 0
+
 def runGames(board,op1,op2,count):
     Player1Win = 0
     Player2Win = 0
@@ -59,7 +63,7 @@ def makeGeneration(fam1,fam2,fam3):
     return generation
 
 def runMilestoneGame(board,op1,op2):
-    Stratego.runGame(op1,op2,board,record=True)
+    return Stratego.runGame(op1,op2,board,record=True)
 
 def getMaxDictEntry(d):
     maxVal = 0
@@ -70,24 +74,24 @@ def getMaxDictEntry(d):
             maxKey = entry
     return (maxKey,maxVal)
 
-def main():
+def runGenerations(numberOfGenerations,op1,op2):
     #generate a starting generation
     gen1Start = "1301701701701601B01A01B01501701301801301901401001B01601501801601801101201201801601B01B01B0150140150170180140180180180140"
     generation = makeGeneration(gen1Start,gen1Start,gen1Start)
-    #for 5 generations
-    for age in range(100):
+    #for 100 generations
+    for age in range(numberOfGenerations):
         global generationNumber
         generationNumber += 1
         print("STARTING GENERATION: {age} ".format(age=age+1))
         childWinRates = dict()
         #each child plays 100 games, the best 3 are chosen for the next generation
         for child in generation:
-            results = runGames(makeStartingBoard(child,player2Board),Stratego.OPPONENTS.RANDOTRON,Stratego.OPPONENTS.RANDOTRON,100)
+            results = runGames(makeStartingBoard(child,player2Board),Stratego.OPPONENTS.LILJIMMY,Stratego.OPPONENTS.RANDOTRON,100)
             childWinRates[child] = results[0]
             
         max1 = getMaxDictEntry(childWinRates)
         childWinRates[max1[0]] = 0
-        runMilestoneGame(makeStartingBoard(child,player2Board),Stratego.OPPONENTS.RANDOTRON,Stratego.OPPONENTS.RANDOTRON)
+        runMilestoneGame(makeStartingBoard(max1[0],player2Board),Stratego.OPPONENTS.LILJIMMY,Stratego.OPPONENTS.RANDOTRON)
         max2 = getMaxDictEntry(childWinRates)
         childWinRates[max2[0]] = 0
         max3 = getMaxDictEntry(childWinRates)
@@ -105,5 +109,41 @@ def recordGameOnDefaultBoard(op1,op2):
     gen1Start = "1301701701701601B01A01B01501701301801301901401001B01601501801601801101201201801601B01B01B0150140150170180140180180180140"
     runMilestoneGame(makeStartingBoard(gen1Start,player2Board),op1,op2)
 
+def parseEnums(opStr):
+    str.upper(opStr)
+    if opStr == "RANDOTRON" or opStr == "RANDO":
+        return Stratego.OPPONENTS.RANDOTRON
+    if opStr == "LILJIMMY" or opStr == "JIMMY":
+        return Stratego.OPPONENTS.LILJIMMY
+    else:
+        print("UNKNOWN OPPONENT")
+        raise ValueError
 
-recordGameOnDefaultBoard(Stratego.OPPONENTS.LILJIMMY,Stratego.OPPONENTS.RANDOTRON)
+def main(argv):
+    if len(argv) == 0:
+        print("Command line tool help!")
+        print("- gen [number] to run a number of generations")
+        print("- singleGame [Opponent1] [Opponent2] to run a default game between two opponents")
+        return
+    if argv[0] == "gen":
+        if len(argv) == 1:
+            raise ValueError
+        gens = int(argv[1])
+        print(gens)
+        #runGenerations(gens)
+        return
+    if argv[0] == "singleGame":
+        gen1Start = "1301701701701601B01A01B01501701301801301901401001B01601501801601801101201201801601B01B01B0150140150170180140180180180140"
+        if len(argv) != 3:
+            raise ValueError
+        else:
+            op1 = parseEnums(argv[1])
+            op2 = parseEnums(argv[2])
+            
+            replay = runMilestoneGame(makeStartingBoard(gen1Start,player2Board),op1,op2)
+            print(replay)
+
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
