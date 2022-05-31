@@ -1,9 +1,9 @@
-from AI.AIBase import StrategoAI
+from AI.AIBase import StrategyAI
 import AI.BehaviorTree as BT
 import AI.AIBase
 import AI.Nodes
 
-class Agent_lilJimmy(StrategoAI):
+class Agent_lilJimmy(StrategyAI):
     def __init__(self,board,agentNumber, rootnode=None) -> None:
         super().__init__(board,agentNumber,rootnode)
         self.addRootNode(BT.SequenceNode("ROOT"))

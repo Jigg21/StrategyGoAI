@@ -6,7 +6,7 @@ from multiprocessing import context
 import tkinter as tk
 from tkinter import filedialog
 from tokenize import Number
-import Stratego
+import StrategyGo
 import time
 import sys
 
@@ -55,7 +55,7 @@ class gameReplay():
                 self.startBoard = f.readline()
                 self.moves = f.readlines()
             #create a board and find board state after each move
-            self.boardOBJ = Stratego.Board(self.startBoard)
+            self.boardOBJ = StrategyGo.Board(self.startBoard)
             playerid = "1"
             for move in self.moves:
                 move = move.split(":")
@@ -131,13 +131,13 @@ def enterInput(event = None):
     inputText.delete(0.0,'end')
     #TODO: Handle invalid moves
     global board
-    Stratego.parseUserInput(inp,board)
+    StrategyGo.parseUserInput(inp,board)
     if AIActive:
         context = dict()
         context["boardState"] = board.getBoard()
         context["playerNumber"] = "2"
         context["Verbose"] = False
-        Stratego.loadOpponent(Stratego.OPPONENTS.RANDOTRON,board,"2").activate(context)
+        StrategyGo.loadOpponent(StrategyGo.OPPONENTS.RANDOTRON,board,"2").activate(context)
     update(board.getBoard())
 
 def numberToggle(event = None):
@@ -214,7 +214,7 @@ def initialize(ReplayMode):
         playButton = tk.Button(replayConsole,text = "Play",command= playReplay)
         playButton.pack(side="bottom")
 
-board = Stratego.Board("1301701701701601B01A01B01B01701301801301901401501B01601501801601801201201101801601B01B0150100140150170180140180180180140000000WWWWWW000000WWWWWW000000000000WWWWWW000000WWWWWW0000002B02B02602602B02602302702802802302302402402202402702902202102502502502402302702702502002B02602702802802802802802802B02A0")
+board = StrategyGo.Board("1301701701701601B01A01B01B01701301801301901401501B01601501801601801201201101801601B01B0150100140150170180140180180180140000000WWWWWW000000WWWWWW000000000000WWWWWW000000WWWWWW0000002B02B02602602B02602302702802802302302402402202402702902202102502502502402302702702502002B02602702802802802802802802B02A0")
 displayGame = gameReplay()
 
 def main(argv):

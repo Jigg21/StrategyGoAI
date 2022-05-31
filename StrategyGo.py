@@ -236,8 +236,12 @@ def parseUserInput(userInput, board):
         board.cheatMode(True)
         return board.getBoard()
     
-    if (userInput == "clear"):
-        board.ClearBoard()
+    if (userInput == "clear" ):
+        if board.isCheating:
+            board.ClearBoard()
+        else:
+            print("THAT'S CHEATING")
+
         return board.getBoard()
 
     userInput = userInput.split(":")

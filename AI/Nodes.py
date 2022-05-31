@@ -6,7 +6,7 @@ from AI.AIBase import moveOBJ
 import AI.BehaviorTree as BT
 import random
 
-import Stratego
+import StrategyGo
 
 
 # "boardState" = Board string
@@ -19,7 +19,7 @@ class node_getValidMoves(BT.Node):
       super().activate(context)
       moveList = list()
       board = context["boardState"]
-      boardObj = Stratego.Board(board)
+      boardObj = StrategyGo.Board(board)
       validMoves = list()
       #for each space on the board
       for i in range(100):
@@ -104,7 +104,7 @@ class node_removeSuicidalMoves(BT.Node):
       super().activate(context)
       moves = context["ValidMoves"]
       boardstr = context["boardState"]
-      board = Stratego.Board(boardstr)
+      board = StrategyGo.Board(boardstr)
       newMoveList = list()
       #remove any move that results in death
       for move in moves:

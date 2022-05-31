@@ -1,2 +1,2 @@
 import unittest
-import Stratego
+import StrategyGo

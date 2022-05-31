@@ -1,7 +1,7 @@
 from tracemalloc import start
 import sys
 from xml.etree.ElementPath import ops
-import Stratego
+import StrategyGo
 import random
 from progress.bar import FillingSquaresBar
 
@@ -56,7 +56,7 @@ def runGames(board,op1,op2,count):
     #run the games and send them to the selection info object, updating the progress bar as it goes
     with FillingSquaresBar("Testing g{age}.{child}: ".format(age=generationNumber,child=childNumber),max=count,suffix='%(index)d/%(max)d') as bar:
         for i in range (count):
-            result = Stratego.runGame(op1,op2,board)
+            result = StrategyGo.runGame(op1,op2,board)
             selectionInfo.parseGame(result)
             bar.next()
         bar.finish()
@@ -107,7 +107,7 @@ def createNextGeneration(pop):
     return nextGen
 
 def runMilestoneGame(board,op1,op2):
-    return Stratego.runGame(op1,op2,board,record=True)
+    return StrategyGo.runGame(op1,op2,board,record=True)
 
 def getMaxDictEntry(d):
     maxVal = 0
@@ -137,6 +137,7 @@ def runGenerations(numberOfGenerations,op1,op2):
         for childA in generationAlpha:
             for childB in generationBeta:
                 results = runGames(makeStartingBoard(childA,childB),op1,op2,100)
+                print(results)
                 if childA in childAWinRates:
                     childAWinRates[childA] += results.getWins()[0]
                 else:
@@ -148,10 +149,9 @@ def runGenerations(numberOfGenerations,op1,op2):
         generationAlpha = createNextGeneration(childAWinRates)
         generationBeta = createNextGeneration(childBWinRates)
 
-
 def runGamesOnDefaultBoard(op1,op2,count):
     info = runGames("1A01B01B01B01B01B01B0190180180180180180180180180170170170170170160160160160150150150150140140140140130130130120120110100000000WWWWWW000000WWWWWW000000000000WWWWWW000000WWWWWW0000002002102202202302302302402402402402502502502502602602602602702702702702702802802802802802802802802902B02B02B02B02B02B02A0",op1,op2,count)
-    print(info)
+    return info
 
 def recordGameOnDefaultBoard(op1,op2):
     return runMilestoneGame("1A01B01B01B01B01B01B0190180180180180180180180180170170170170170160160160160150150150150140140140140130130130120120110100000000WWWWWW000000WWWWWW000000000000WWWWWW000000WWWWWW0000002002102202202302302302402402402402502502502502602602602602702702702702702802802802802802802802802902B02B02B02B02B02B02A0",op1,op2)
@@ -159,9 +159,9 @@ def recordGameOnDefaultBoard(op1,op2):
 def parseEnums(opStr):
     opStr = str.upper(opStr)
     if opStr == "RANDOTRON" or opStr == "RANDO":
-        return Stratego.OPPONENTS.RANDOTRON
-    if opStr == "LILJIMMY" or opStr == "JIMMY":
-        return Stratego.OPPONENTS.LILJIMMY
+        return StrategyGo.OPPONENTS.RANDOTRON
+    if opStr == "LILJIMMY" or opStr == "JIMMY" or opStr == "JIM":
+        return StrategyGo.OPPONENTS.LILJIMMY
     else:
         print("UNKNOWN OPPONENT")
         raise ValueError
@@ -200,8 +200,8 @@ def main(argv):
         else:
             op1 = parseEnums(argv[1])
             op2 = parseEnums(argv[2])
-            runGamesOnDefaultBoard(op1,op2,int(argv[3]))
-    
+            result = runGamesOnDefaultBoard(op1,op2,int(argv[3]))
+            print(result)
 
 
 
