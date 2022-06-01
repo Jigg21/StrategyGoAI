@@ -16,5 +16,5 @@ class Agent_lilJimmy(StrategyAI):
         self.addNodetoRoot(MakeMove)
     
     def __str__(self) -> str:
-        return "Lil Jimmy"
+        return "LilJimmy"
 
